@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>午夜廣播：數位戰情室 - 終極戰役版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --cyber-blue: #00f3ff;
+            --cyber-dark: #05080f;
+            --cyber-alert: #ff003c;
+            --cyber-warning: #ffb700;
+            --cyber-success: #00ff66;
+            --cyber-panel: rgba(10, 16, 28, 0.95);
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--cyber-dark);
+            color: #e0e7ff;
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.04) 1px, transparent 1px);
+            background-size: 35px 35px;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: filter 0.1s;
+        }
+
+        .mono-font { font-family: 'Share Tech Mono', monospace; }
+
+        body::before {
+            content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: -1; background-size: 100% 2px, 3px 100%; pointer-events: none; opacity: 0.5;
+        }
+
+        /* 畫面故障震動特效 */
+        .system-glitch {
+            animation: screenShake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+            filter: drop-shadow(4px 0px 0px rgba(255,0,60,0.8)) drop-shadow(-4px 0px 0px rgba(0,243,255,0.8));
+        }
+
+        @keyframes screenShake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        .cyber-panel {
+            background: var(--cyber-panel);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(0, 243, 255, 0.05);
+            position: relative;
+        }
+
+        .btn-cyber {
+            background: rgba(0, 243, 255, 0.05); color: var(--cyber-blue);
+            border: 1px solid var(--cyber-blue); text-transform: uppercase;
+            transition: all 0.2s; position: relative;
+        }
+        .btn-cyber:hover:not(:disabled) {
+            background: var(--cyber-blue); color: var(--cyber-dark); box-shadow: 0 0 15px var(--cyber-blue);
+        }
+        .btn-cyber:disabled { border-color: #374151; color: #6b7280; cursor: not-allowed; background: transparent; }
+
+        /* Custom Input Range */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 24px; width: 12px; background: var(--cyber-blue); cursor: pointer; box-shadow: 0 0 10px var(--cyber-blue); margin-top: -10px; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: #374151; }
+
+        /* Custom Select */
+        select { appearance: none; background: #000; color: var(--cyber-blue); border: 1px solid var(--cyber-blue); padding: 0.5rem 2rem 0.5rem 1rem; border-radius: 4px; font-family: 'Share Tech Mono', 'Noto Sans TC', sans-serif; cursor: pointer; outline: none; width: 100%; }
+        select:focus { box-shadow: 0 0 10px rgba(0,243,255,0.3); }
+
+        /* Text Analysis */
+        .interactive-text { line-height: 2.2; font-size: 1.15rem; }
+        .word-node { cursor: pointer; border-bottom: 2px dotted #4b5563; padding: 0 4px; transition: all 0.2s; }
+        .word-node:hover { background: rgba(255,255,255,0.1); }
+        .word-node.selected { background: var(--cyber-warning); color: #000; border-bottom: none; }
+        .word-node.revealed-trap { background: rgba(255,0,60,0.2); border-bottom: 2px solid var(--cyber-alert); color: #ff809f;}
+        .word-node.revealed-distractor { background: rgba(0,255,102,0.2); border-bottom: 2px solid var(--cyber-success); color: #80ffbf;}
+
+        /* Terminals & Misc */
+        .terminal-box { background: #000; color: #00f3ff; padding: 1.5rem; border: 1px solid #374151; border-radius: 4px; overflow-y: auto; height: 350px; font-family: 'Share Tech Mono', monospace; }
+        .sri-bar { height: 10px; background: #1f2937; position: relative; overflow: hidden; border: 1px solid #374151; }
+        .sri-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #00f3ff, #00ff66); transition: width 0.5s, background 0.5s; }
+        #custom-modal { display: none; } #custom-modal.active { display: flex; }
+        .triage-card { cursor: pointer; transition: all 0.2s; border: 1px solid #374151; }
+        .triage-card:hover { border-color: var(--cyber-blue); box-shadow: 0 0 10px rgba(0,243,255,0.2); background: rgba(0,243,255,0.05); }
+        .triage-card.selected { border-color: var(--cyber-warning); background: rgba(255,183,0,0.1); }
+        .edu-box { background: linear-gradient(90deg, rgba(0, 51, 102, 0.6) 0%, rgba(0, 0, 0, 0.4) 100%); border-left: 4px solid var(--cyber-blue); }
+
+        /* Timer Bar for Time Attack */
+        .timer-bar { height: 6px; background: #374151; width: 100%; overflow: hidden; border-radius: 3px; margin-bottom: 1rem; }
+        .timer-fill { height: 100%; width: 100%; background: var(--cyber-alert); transition: width 0.1s linear; }
+
+        /* Speech Bubble */
+        .speech-bubble { position: relative; background: #e5e7eb; color: #111827; border-radius: .4em; padding: 1rem; font-weight: bold; }
+        .speech-bubble:after { content: ''; position: absolute; left: 0; top: 50%; width: 0; height: 0; border: 15px solid transparent; border-right-color: #e5e7eb; border-left: 0; border-bottom: 0; margin-top: -7.5px; margin-left: -15px; }
+
+        .hex-row { display: flex; gap: 1rem; padding: 0.2rem 0.5rem; transition: all 0.2s; cursor: crosshair; border-radius: 2px; }
+        .hex-row:hover { background: rgba(0,243,255,0.2); }
+        .hex-hex { color: #8b949e; letter-spacing: 0.1em; flex: 2; }
+        .hex-ascii { color: var(--cyber-success); flex: 1; overflow: hidden; white-space: pre; }
+
+        .trace-node { cursor: pointer; border-left: 2px solid #374151; padding: 1rem 1rem 1rem 2rem; position: relative; transition: all 0.3s; }
+        .trace-node::before { content:''; position:absolute; left:-6px; top:50%; transform:translateY(-50%); width:10px; height:10px; background:#374151; border-radius:50%; transition: all 0.3s; }
+        .trace-node:hover { background: rgba(255,183,0,0.1); }
+        .trace-node:hover::before { background: var(--cyber-warning); box-shadow: 0 0 10px var(--cyber-warning); }
+
+        /* SVG Map */
+        .map-region { fill: #1f2937; stroke: #374151; stroke-width: 2; transition: all 0.3s; cursor: crosshair; }
+        .map-region:hover { fill: rgba(0,243,255,0.3); stroke: var(--cyber-blue); }
+        .map-region.targeted { fill: rgba(0,255,102,0.5); stroke: var(--cyber-success); }
+
+        /* SVG Network */
+        .net-node { fill: #1f2937; stroke: var(--cyber-blue); stroke-width: 1.5; cursor: pointer; transition: all 0.3s; }
+        .net-group:hover .net-node { fill: rgba(0,243,255,0.3); stroke-width: 3; }
+        .net-edge { stroke: rgba(0,243,255,0.5); stroke-width: 1.5; }
+        .net-group.eliminated .net-node { fill: var(--cyber-alert); stroke: #fff; }
+    </style>
+</head>
+<body id="main-body" class="p-2 md:p-6">
+
+    <!-- Global HUD -->
+    <header id="hud" class="w-full max-w-6xl mx-auto mb-6 cyber-panel p-4 rounded z-10 flex flex-col md:flex-row justify-between items-center hidden">
+        <div class="flex items-center gap-4 mb-4 md:mb-0">
+            <div class="w-12 h-12 border-2 border-[var(--cyber-blue)] flex items-center justify-center font-bold text-xl text-[var(--cyber-blue)] shadow-[0_0_10px_var(--cyber-blue)]">D-OP</div>
+            <div>
+                <h1 class="text-xl font-bold tracking-wider text-[var(--cyber-blue)]">國家認知作戰防禦中心</h1>
+                <p id="hud-stage-info" class="text-xs text-gray-400 mono-font">DAY 1 // STAGE 01</p>
+            </div>
+        </div>
+        <div class="w-full md:w-1/3">
+            <div class="flex justify-between text-sm mb-1 mono-font">
+                <span>社會防衛韌性 (SRI)</span>
+                <span id="sri-score" class="font-bold text-[var(--cyber-success)]">100%</span>
+            </div>
+            <div class="sri-bar"><div id="sri-fill" class="sri-fill"></div></div>
+        </div>
+    </header>
+
+    <main class="w-full max-w-6xl mx-auto flex-1 flex flex-col relative z-10">
+        <div id="game-container" class="cyber-panel p-6 md:p-10 rounded flex-1 flex flex-col shadow-2xl">
+            <!-- Dynamic Content -->
+        </div>
+    </main>
+
+    <!-- Custom Modal -->
+    <div id="custom-modal" class="fixed inset-0 bg-black/85 z-[100] items-center justify-center p-4 backdrop-blur-sm">
+        <div class="cyber-panel p-8 max-w-md w-full border-t-4 border-t-[var(--cyber-alert)] shadow-2xl">
+            <h3 id="modal-title" class="text-2xl font-bold text-[var(--cyber-alert)] mb-4 flex items-center gap-2"></h3>
+            <div id="modal-msg" class="text-gray-200 text-lg leading-relaxed mb-6 font-sans"></div>
+            <div class="text-right">
+                <button id="modal-btn-confirm" class="btn-cyber px-6 py-2 border-[var(--cyber-blue)] text-[var(--cyber-blue)] hover:bg-[var(--cyber-blue)] hover:text-black font-bold">確認 (ACKNOWLEDGE)</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================
+           AUDIO ENGINE (Web Audio API Synthesizer)
+           ========================================== */
+        let audioCtx;
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playBeep(freq, type, duration, vol) {
+            if (!audioCtx) return;
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            osc.type = type; osc.frequency.value = freq;
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start();
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playType() { playBeep(1200, 'square', 0.05, 0.02); }
+        function playError() { playBeep(150, 'sawtooth', 0.6, 0.15); playBeep(100, 'square', 0.6, 0.15); }
+        function playSuccess() { playBeep(600, 'sine', 0.1, 0.05); setTimeout(()=>playBeep(800, 'sine', 0.2, 0.05), 100); }
+        function playAlert() { playBeep(400, 'triangle', 0.2, 0.1); setTimeout(()=>playBeep(400, 'triangle', 0.2, 0.1), 250); }
+
+        let noiseNode, noiseGain;
+        function playWhiteNoise() {
+            if(!audioCtx) return;
+            const bufferSize = audioCtx.sampleRate * 2;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) { output[i] = Math.random() * 2 - 1; }
+            noiseNode = audioCtx.createBufferSource();
+            noiseNode.buffer = buffer;
+            noiseNode.loop = true;
+            noiseGain = audioCtx.createGain();
+            noiseGain.gain.value = 0.05;
+            noiseNode.connect(noiseGain);
+            noiseGain.connect(audioCtx.destination);
+            noiseNode.start(0);
+        }
+        function stopWhiteNoise() {
+            if(noiseNode) { noiseNode.stop(); noiseNode.disconnect(); }
+        }
+
+        /* Typewriter Effect Function - Robust DOM Version */
+        let typeTimeouts = [];
+        function clearTyping() { typeTimeouts.forEach(clearTimeout); typeTimeouts = []; }
+
+        async function typeText(element, htmlString, speed = 20, clear = true) {
+            if (clear) element.innerHTML = '';
+            
+            let temp = document.createElement('div');
+            temp.innerHTML = htmlString.replace(/\n/g, '<br>');
+            
+            async function typeNode(node, parent) {
+                if (node.nodeType === 3) { // TEXT_NODE
+                    let text = node.nodeValue;
+                    for (let i = 0; i < text.length; i++) {
+                        parent.appendChild(document.createTextNode(text[i]));
+                        if (text[i] !== ' ' && i % 3 === 0) playType();
+                        // Scroll to bottom if it's a terminal
+                        if (element.classList.contains('terminal-box')) element.scrollTop = element.scrollHeight;
+                        await new Promise(r => { let t = setTimeout(r, speed); typeTimeouts.push(t); });
+                    }
+                } else if (node.nodeType === 1) { // ELEMENT_NODE
+                    if (node.tagName.toLowerCase() === 'br') {
+                        parent.appendChild(document.createElement('br'));
+                    } else {
+                        let newEl = document.createElement(node.tagName);
+                        for (let attr of node.attributes) newEl.setAttribute(attr.name, attr.value);
+                        parent.appendChild(newEl);
+                        for (let child of node.childNodes) {
+                            await typeNode(child, newEl);
+                        }
+                    }
+                }
+            }
+            
+            for (let child of temp.childNodes) {
+                await typeNode(child, element);
+            }
+        }
+
+        /* ==========================================
+           CAMPAIGN DATA 
+           ========================================== */
+        const campaign = [
+            {
+                type: 'briefing', title: '【最高機密】全領域防衛兵推簡報',
+                content: `<p class="mb-4">指揮官，歡迎來到「國家認知作戰防禦中心」。未來 8 天內，境外勢力將發動全領域認知作戰。</p>
+                          <p class="mb-4 text-[var(--cyber-warning)]">系統升級通告：為應對複雜威脅，戰情室已解鎖全新系統！您將體驗<strong class="text-white">【惡意程式沙盒】、【限時自由輸入防禦】、【資源調度分配】與【IP 路由追蹤】</strong>等高階防禦協議。系統將模擬極端高壓環境，保持冷靜，SRI 歸零即判定國家癱瘓。</p>`
+            },
+            
+            // --- DAY 1 ---
+            { id: 'S01', day: 'DAY 1: 能源戰', type: 'semantic', title: 'STAGE 01 // 語意分析：瓦斯恐慌', eduContext: '【教育要旨：邊緣系統騎劫】認知戰針對的是情感而非邏輯。', instruction: '找出文本中的 3 個語意陷阱。', rawText: '【[緊急擴散](trap:情緒勒索)】剛剛[高層密友透露](trap:匿名權威)，台中天然氣廠遭無人機攻擊！[中南部多處停電](distractor:客觀事實)，而[第58步兵旅](trap:虛假編制)已全面接管，[市府已開設應變中心](distractor:客觀事實)，請立刻去囤積！', requiredTraps: 3 },
+            { id: 'S02', day: 'DAY 1: 能源戰', type: 'phishing', title: 'STAGE 02 // 網域鑑識：釣魚網站', eduContext: '【教育要旨：誤植網域 (Typosquatting)】', instruction: '找出假冒政府的釣魚網域。', urls: [
+                { url: 'https://www.moea.gov.tw/MNS', isFake: false },
+                { url: 'https://www.moea-gov-tw.com/news', isFake: true, reason: '台灣政府網域必為 .gov.tw，不會以 -gov-tw.com 結尾。' },
+                { url: 'https://www.taipower.com.tw/', isFake: false }
+            ]},
+            { id: 'S03', day: 'DAY 1: 能源戰', type: 'osint', title: 'STAGE 03 // OSINT：迷霧資料庫', eduContext: '【教育要旨：精準查核路徑】', instruction: '選擇 2 個正確資料庫反駁謠言。', queries: [
+                { id: 'q1', text: '經濟部能源署', isTarget: true, response: '安全存量達 14 天以上。' },
+                { id: 'q2', text: '台灣事實查核中心', isTarget: true, response: '無「第五八步兵旅」編制。' },
+                { id: 'q3', text: '中央氣象署', isTarget: false, response: '無關資訊。' }
+            ], requiredClues: 2 },
+            
+            { id: 'S04', day: 'DAY 1: 能源戰', type: 'press', title: 'STAGE 04 // 危機溝通：記者會交鋒', eduContext: '【教育要旨：框架控制】面對誘導性提問，絕對不可跟著媒體的「負面字眼」回答，必須直接陳述正面事實。', instruction: '擔任官方發言人，請【自行輸入】回應。必須包含安定字眼，且不可重複敵方陷阱詞。', 
+              reporter: '發言人！網傳台中天然氣廠已經被炸毀了，請問政府是不是在掩蓋軍管真相？！',
+              rules: ['包含正面事實（如：充裕/充足/正常/無虞）'],
+              forbiddenWords: ['炸毀', '掩蓋', '軍管'], requiredWords: ['充裕', '充足', '正常', '無虞']
+            },
+
+            // --- DAY 2 ---
+            { id: 'S05', day: 'DAY 2: 通訊中斷', type: 'triage', timeLimit: 15, title: 'STAGE 05 // 情報檢傷分類 (TIME ATTACK)', eduContext: '【教育要旨：防衛優先順序】真實危機分秒必爭。未在時限內攔截，傷害將擴大。', instruction: '海底電纜受損，網路瞬斷。選出最急迫的謠言。倒數結束前未決斷將持續扣分！', options: [
+                  { text: 'A. 知名藝人宣布移民。', correct: false, reason: '娛樂八卦。' },
+                  { text: 'B. 總統府今晚斷網戒嚴，呼籲民眾包圍區公所。', correct: true, reason: '會引發實體暴動，最高優先級。' }
+              ] 
+            },
+            { id: 'S06', day: 'DAY 2: 通訊中斷', type: 'tuning', title: 'STAGE 06 // 電磁戰：蓋台廣播攔截', eduContext: '【教育要旨：頻譜作戰】', instruction: '拖曳滑桿(88~108MHz)，直到雜訊降至最低。', targetFreq: 96.3, secretMsg: '【攔截成功】...今晚八點包圍各地公所...' },
+            { id: 'S07', day: 'DAY 2: 通訊中斷', type: 'allocation', title: 'STAGE 07 // 防衛動員：資源調度', eduContext: '【教育要旨：實體與數位並重】', instruction: '分配 10 單位應變部隊以平息恐慌。', 
+              targets: ['實體維安部隊 (區公所防護)', '電信工程大隊 (搶修電纜)', '國安公關專員'], totalPoints: 10, rules: [4, 4, 0], ruleMsg: '調度正確！維安部隊與工程大隊成功穩定了實體防線。'
+            },
+
+            // --- DAY 3 ---
+            { id: 'S08', day: 'DAY 3: 金融戰', type: 'semantic', title: 'STAGE 08 // 語意分析：銀行擠兌', eduContext: '【教育要旨：信任崩解戰術】', instruction: '找出 3 個陷阱。', rawText: '【[最後警告](trap:情緒操弄)】外資已[全面撤離](trap:絕對性)。[央行今日召開會議](distractor:客觀事實)，不敢說[外匯已被掏空](trap:陰謀論)。', requiredTraps: 3 },
+            { id: 'S09', day: 'DAY 3: 金融戰', type: 'sequence', title: 'STAGE 09 // 邏輯重構：時間軸破綻', eduContext: '【教育要旨：時間軸矛盾】', instruction: '排列事實證偽。', sequenceData: [
+                { id: 1, text: '前提A：今日下午當地降下大暴雨。' },
+                { id: 2, text: '前提B：影片中，民眾卻在「出大太陽」的銀行門口推擠。' },
+                { id: 3, text: '結論：天氣與時間出現致命矛盾。' }
+            ]},
+            { id: 'S10', day: 'DAY 3: 金融戰', type: 'builder', title: 'STAGE 10 // 模組化反制：金融安定', eduContext: '【教育要旨：不為敵方背書】', instruction: '拼湊聲明。', 
+              parts: [
+                  { id: 'p1', label: '1. 定調：', options: [{ val: 'wrong', text: '關於外資撤離與掏空...' }, { val: 'correct', text: '針對近日金融體系不實謠言...' }]},
+                  { id: 'p2', label: '2. 事實：', options: [{ val: 'correct', text: '外匯存底充裕，流動性無虞。' }, { val: 'wrong', text: '央行絕對沒有破產。' }]}
+              ], correctMsg: '正確的金融溝通策略。'
+            },
+
+            // --- DAY 4 ---
+            { id: 'S11', day: 'DAY 4: 交通癱瘓', type: 'cipher', title: 'STAGE 11 // 密碼解譯：駭客預告', eduContext: '【教育要旨：隱蔽通訊】', instruction: '攔截 Base64 預告並解碼。', cipherText: 'VGFyZ2V0OiBIU1JDIFNpZ25hbA==', plainText: 'Target: HSRC Signal (目標：高鐵號誌)' },
+            { id: 'S12', day: 'DAY 4: 交通癱瘓', type: 'semantic', title: 'STAGE 12 // 語意分析：跳軌恐慌', eduContext: '【教育要旨：恐懼訴求】', instruction: '找出 3 個陷阱。', rawText: '【[絕命終結站](trap:恐懼)】[駭客匿名首腦證實](trap:匿名權威)取得權限！[目前售票無法連線](distractor:事實)，號誌[全數失靈](trap:絕對性)，將相撞！', requiredTraps: 3 },
+            { id: 'S13', day: 'DAY 4: 交通癱瘓', type: 'osint', title: 'STAGE 13 // OSINT：號誌查核', eduContext: '【教育要旨：IT與OT隔離】', instruction: '查證高鐵狀態。', queries: [
+                { id: 'q1', text: '高鐵行控中心', isTarget: true, response: '售票受阻，號誌實體隔離安全。' },
+                { id: 'q2', text: '高速公路局', isTarget: false, response: '無關資訊。' }
+            ], requiredClues: 1 },
+            { id: 'S14', day: 'DAY 4: 交通癱瘓', type: 'press', title: 'STAGE 14 // 危機溝通：記者會交鋒', eduContext: '【教育要旨：專業與底氣】', instruction: '【自行輸入】反駁駭客已控制號誌的謠言。', 
+              reporter: '高鐵還要繼續發車，是在拿旅客的命對賭嗎？！', rules: ['需提及「實體隔離」或「內網」來確保安全'],
+              forbiddenWords: ['對賭', '相撞'], requiredWords: ['實體隔離', '內網', '物理隔離']
+            },
+
+            // --- DAY 5 ---
+            { id: 'S15', day: 'DAY 5: 軍事風暴', type: 'hex', title: 'STAGE 15 // 檔案沙盒：Hex 分析', eduContext: '【教育要旨：AI 深偽簽章】', instruction: '在投降影片代碼中找出 AI 軟體簽章。', 
+              hexLines: [
+                  { hex: '00 00 00 18 66 74 79 70', ascii: '....ftyp', msg: '正常的 MP4 標頭。' },
+                  { hex: '6D 65 74 61 3A 57 61 76 32 4C 69 70', ascii: 'meta:Wav2Lip', isMalicious: true, msg: '識別成功！發現 Wav2Lip (AI嘴型同步) 簽章。' }
+              ]
+            },
+            { id: 'S16', day: 'DAY 5: 軍事風暴', type: 'network', title: 'STAGE 16 // 網軍拓撲：C2 節點', eduContext: '【教育要旨：協同性行為 (CIB)】', instruction: '找出拓撲圖中的源頭 C2 節點並封鎖。',
+              nodes: [
+                  { id: 'N1', cx: 30, cy: 30, isTarget: false }, { id: 'N2', cx: 70, cy: 25, isTarget: false },
+                  { id: 'N3', cx: 50, cy: 50, isTarget: true, msg: '精準打擊！節點 N3 是源頭。' },
+                  { id: 'N4', cx: 20, cy: 70, isTarget: false }
+              ], edges: [ {f: 'N3', t: 'N1'}, {f: 'N3', t: 'N2'}, {f: 'N3', t: 'N4'} ]
+            },
+            
+            // --- DAY 6 ---
+            { id: 'S17', day: 'DAY 6: 外交孤立', type: 'sequence', title: 'STAGE 17 // 邏輯重構：外交聲明', eduContext: '【教育要旨：斷章取義】', instruction: '排列事實證偽「美國拋棄論」。', sequenceData: [
+                { id: 1, text: '確認網傳畫面內容與衣著。' },
+                { id: 2, text: '搜尋白宮官網，發現為十年舊演說。' },
+                { id: 3, text: '證實台美安全合作持續進行。' }
+            ]},
+            { id: 'S18', day: 'DAY 6: 外交孤立', type: 'builder', title: 'STAGE 18 // 模組化反制：外交信心', eduContext: '【教育要旨：展示盟友實質合作】', instruction: '拼湊外交安定聲明。', 
+              parts: [
+                  { id: 'p1', label: '1. 定調：', options: [{ val: 'wrong', text: '網傳拋棄台灣...' }, { val: 'correct', text: '關於外交不實聲明...' }]},
+                  { id: 'p2', label: '2. 事實：', options: [{ val: 'correct', text: '合作皆如常進行。' }, { val: 'wrong', text: '軍隊沒有撤出。' }]}
+              ], correctMsg: '成功運用正面事實穩定了恐慌。'
+            },
+
+            // --- DAY 7 ---
+            { id: 'S19', day: 'DAY 7: 公衛恐慌', type: 'bias', title: 'STAGE 19 // 認知偏誤：毒水謠言', eduContext: '【教育要旨：負面偏誤】', instruction: '網傳水被下毒，利用什麼心理？', options: [
+                  { text: 'A. 達克效應', correct: false, reason: '無關。' }, { text: 'B. 負面偏誤與死亡恐懼', correct: true, reason: '正確！' }
+              ] 
+            },
+            { id: 'S20', day: 'DAY 7: 公衛恐慌', type: 'traceroute', title: 'STAGE 20 // 網域鑑識：路由追蹤', eduContext: '【教育要旨：跳板溯源】', instruction: '點擊延遲異常飆高的海外源頭節點。', 
+              hops: [
+                  { ip: '114.32.x.x', loc: 'Taiwan (ISP)', ms: 5, isTarget: false, msg: '正常。' },
+                  { ip: '103.25.x.x', loc: 'Tokyo (VPN)', ms: 45, isTarget: false, msg: '跳板。' },
+                  { ip: '221.194.x.x', loc: 'Unknown Foreign', ms: 980, isTarget: true, msg: '溯源成功！異常高延遲，揭露境外勢力。' }
+              ]
+            },
+
+            // --- DAY 8 ---
+            { id: 'S21', day: 'DAY 8: 總體戰', type: 'bias', title: 'STAGE 21 // 認知偏誤：最終考驗', eduContext: '【教育要旨：從眾效應 (Bandwagon Effect)】創造多數人已放棄的假象。', instruction: '敵方洗版「國家已滅亡，抵抗徒勞」。利用什麼效應？', options: [
+                  { text: 'A. 稟賦效應', correct: false, reason: '無關。' },
+                  { text: 'B. 從眾效應', correct: true, reason: '正確！逼迫少數人盲從。' }
+              ] 
+            },
+            { id: 'S22', day: 'DAY 8: 總體戰', type: 'cbs', title: 'STAGE 22 // 最終決策：全國總動員令', eduContext: '【教育要旨：全社會防衛韌性】防線在每一位國民心中。', instruction: '戰役最後一刻。撰寫防衛動員廣播。', rules: ['安撫民心', '駁斥國家滅亡謠言'], forbiddenWords: ['滅亡', '徒勞'], requiredWords: ['堅守', '團結', '假'] },
+
+            { type: 'ending' }
+        ];
+
+        /* ==========================================
+           ENGINE & STATE MANAGEMENT
+           ========================================== */
+        let state = {
+            idx: 0, sri: 100, osintFound: 0, osintSet: new Set(),
+            seqArr: [], penaltyActive: false, timerInterval: null
+        };
+
+        const elements = {
+            body: document.getElementById('main-body'),
+            hud: document.getElementById('hud'),
+            container: document.getElementById('game-container'),
+            sriScore: document.getElementById('sri-score'),
+            sriFill: document.getElementById('sri-fill'),
+            stageInfo: document.getElementById('hud-stage-info'),
+            modal: document.getElementById('custom-modal'),
+            modalBtn: document.getElementById('modal-btn-confirm'),
+            modalMsg: document.getElementById('modal-msg')
+        };
+
+        function triggerGlitch() {
+            playError();
+            elements.body.classList.add('system-glitch');
+            setTimeout(() => elements.body.classList.remove('system-glitch'), 400);
+        }
+
+        async function showAlert(title, msg, onConfirm = null) {
+            clearInterval(state.timerInterval); // Stop timers when modal is open
+            document.getElementById('modal-title').innerHTML = `⚠️ ${title}`;
+            elements.modal.classList.add('active');
+            elements.modalBtn.style.display = 'none';
+            
+            // 直接插入 HTML 以避免打字機解析 HTML 標籤造成的 </spam> 亂碼問題
+            // 並搭配音效呈現警告或成功的氣氛
+            elements.modalMsg.innerHTML = msg;
+            if(title.includes('警告') || title.includes('錯誤')) { playError(); } else { playAlert(); }
+
+            elements.modalBtn.style.display = 'inline-block';
+
+            elements.modalBtn.onclick = () => { 
+                elements.modal.classList.remove('active'); 
+                if (onConfirm) onConfirm(); 
+            };
+        }
+
+        function applyPenalty(amount, reason, callback = null) {
+            state.sri -= amount; if(state.sri < 0) state.sri = 0; updateSRIUI();
+            triggerGlitch();
+
+            showAlert('SRI 下降警告', `扣除 ${amount}% SRI。<br>原因：${reason}`, () => {
+                if(state.sri <= 0) {
+                    elements.container.innerHTML = `<div class="text-center flex-1 flex flex-col justify-center"><h2 class="text-5xl font-bold text-[var(--cyber-alert)] mb-6 glitch" data-text="SYSTEM FAILURE">SYSTEM FAILURE</h2><p class="text-xl text-gray-300">防衛韌性歸零。國家癱瘓。</p><button onclick="location.reload()" class="btn-cyber px-8 py-3 mt-8 mx-auto w-max">重新啟動演習</button></div>`;
+                } else if (callback) callback();
+            });
+        }
+
+        function updateSRIUI() {
+            elements.sriScore.innerText = `${state.sri}%`; elements.sriFill.style.width = `${state.sri}%`;
+            if(state.sri < 50) { elements.sriFill.style.background = 'linear-gradient(90deg, #ff9900, #ff003c)'; elements.sriScore.style.color = 'var(--cyber-alert)'; }
+        }
+
+        function nextStage() { 
+            state.idx++; 
+            renderStage(); 
+        }
+
+        /* ==========================================
+           RENDER ENGINE
+           ========================================== */
+        let noiseInterval;
+
+        async function renderStage() {
+            const stage = campaign[state.idx];
+            if(!stage) return;
+
+            // Reset sub-state
+            state.osintFound = 0; state.osintSet.clear(); state.seqArr = []; state.penaltyActive = false; 
+            clearInterval(noiseInterval); clearInterval(state.timerInterval); clearTyping(); stopWhiteNoise();
+
+            if(stage.type === 'briefing' || stage.type === 'ending') { elements.hud.classList.add('hidden'); } 
+            else { elements.hud.classList.remove('hidden'); elements.stageInfo.innerText = `${stage.day} // ${stage.id}`; }
+
+            let html = '';
+            let eduHtml = stage.eduContext ? `<div class="edu-box p-4 mb-6 rounded text-sm text-blue-100 leading-relaxed shadow-lg">${stage.eduContext}</div>` : '';
+            
+            // Timer UI
+            let timerHtml = '';
+            if (stage.timeLimit) {
+                timerHtml = `<div class="timer-bar"><div id="stage-timer-fill" class="timer-fill"></div></div>`;
+            }
+
+            if (stage.type !== 'briefing' && stage.type !== 'ending') {
+                html += `<h2 class="text-2xl font-bold text-[var(--cyber-blue)] mb-2">${stage.title}</h2>${eduHtml}${timerHtml}<p class="text-gray-300 mb-6 pb-4 border-b border-gray-700 font-bold">${stage.instruction}</p>`;
+            }
+
+            // Build UI based on type
+            if(stage.type === 'briefing') {
+                html = `<div class="flex-1 flex flex-col justify-center items-center text-center max-w-3xl mx-auto"><h2 class="text-3xl font-bold text-[var(--cyber-blue)] mb-8">${stage.title}</h2><div class="text-lg leading-relaxed text-left bg-black/40 p-8 rounded border border-gray-700 shadow-2xl">${stage.content}</div><button onclick="initAudio(); nextStage();" class="btn-cyber px-10 py-4 mt-10 font-bold text-xl tracking-wider">啟動系統 (INITIALIZE)</button></div>`;
+            }
+            else if (stage.type === 'semantic') {
+                let parsedText = stage.rawText.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, metadata) => {
+                    const parts = metadata.split(':'); return `<span class="word-node" data-type="${parts[0]}" data-reason="${parts[1] || ''}" onclick="handleWordClick(this, ${stage.requiredTraps})">${text}</span>`;
+                });
+                html += `<div class="flex flex-col md:flex-row gap-6"><div class="w-full md:w-2/3"><div class="bg-gray-900 p-6 rounded border border-gray-700 interactive-text shadow-inner">${parsedText}</div><div class="mt-6 flex justify-between items-center"><span class="text-[var(--cyber-warning)] font-bold">已標記：<span id="trap-counter">0</span> / ${stage.requiredTraps}</span><button id="btn-verify-semantic" onclick="verifySemantic(${stage.requiredTraps})" class="btn-cyber px-6 py-2" disabled>驗證分析</button></div></div><div class="w-full md:w-1/3 bg-black p-4 rounded border border-gray-700 flex flex-col shadow-inner"><h3 class="mono-font text-sm text-gray-500 mb-2">>_ ANALYSIS_LOG</h3><div id="semantic-log" class="text-sm space-y-3 overflow-y-auto text-gray-300 flex-1">等待操作...</div></div></div>`;
+            }
+            else if (stage.type === 'osint') {
+                let buttons = stage.queries.map(q => `<button onclick="handleOsintClick(this, '${q.id}', ${q.isTarget}, '${q.response}', ${stage.requiredClues})" class="w-full text-left bg-gray-800 hover:bg-gray-700 p-4 rounded border border-gray-600 mb-3 flex justify-between shadow-md"><span>[連線] ${q.text}</span><span class="text-xs text-gray-400 border border-gray-600 px-1 rounded">EXECUTE</span></button>`).join('');
+                html += `<div class="flex flex-col md:flex-row gap-6"><div class="w-full md:w-1/2">${buttons}<div class="mt-4 p-3 border border-[var(--cyber-blue)] rounded text-blue-200 bg-blue-900/20">獲得有效線索：<span id="osint-counter" class="font-bold text-white text-lg">0</span> / ${stage.requiredClues}</div></div><div class="w-full md:w-1/2 flex flex-col"><div id="osint-terminal" class="terminal-box flex-1 shadow-inner"></div><button id="btn-next-osint" onclick="nextStage()" class="btn-cyber mt-4 py-3 hidden shadow-lg">情報確認完畢，進入下一階段 >></button></div></div>`;
+            }
+            else if (stage.type === 'bias') {
+                let optionsHtml = stage.options.map(opt => `<button onclick="handleMCQ(${opt.correct}, '${opt.reason.replace(/'/g, "\\'")}')" class="w-full text-left bg-gray-800 hover:bg-gray-700 p-4 rounded border border-gray-600 mb-3 shadow-md">${opt.text}</button>`).join('');
+                html += `<div class="flex flex-col md:flex-row gap-6 mt-4"><div class="w-full md:w-1/2"><div class="h-full bg-gray-900/50 p-6 rounded flex items-center justify-center border border-gray-700 text-gray-500 italic mono-font shadow-inner">【心理戰模型分析中...】</div></div><div class="w-full md:w-1/2 flex flex-col justify-center">${stage.question ? `<h3 class="text-[var(--cyber-warning)] font-bold mb-4 bg-gray-800 p-3 rounded">❓ 系統提問：${stage.question}</h3>` : ''}${optionsHtml}</div></div>`;
+            }
+            else if (stage.type === 'cbs') {
+                let rulesHtml = stage.rules.map(r => `<li class="mb-1">${r}</li>`).join('');
+                html += `<div class="bg-gray-900 p-6 rounded border border-gray-700 flex-1 flex flex-col shadow-inner"><div class="bg-black/60 p-4 border border-gray-800 rounded mb-4"><p class="text-[var(--cyber-warning)] font-bold mb-2">📋 廣播撰寫準則 (違規將嚴重扣分)：</p><ul class="list-disc pl-5 text-sm text-gray-300">${rulesHtml}</ul></div><div class="flex justify-between text-sm mb-2"><span class="text-[var(--cyber-blue)] font-bold">發送目標：全國行動裝置</span><span id="char-counter" class="font-mono">0 / 60 字</span></div><textarea id="cbs-input" class="w-full bg-black text-white p-4 rounded border border-gray-600 focus:border-[var(--cyber-blue)] focus:outline-none resize-none flex-1 text-lg mb-4 shadow-inner" placeholder="請輸入澄清簡訊... (上限60字)" maxlength="80" oninput="updateCbsCount(this)"></textarea><div class="text-right"><button onclick="submitCBS()" class="btn-cyber px-8 py-3 bg-[var(--cyber-blue)] text-black font-bold shadow-lg">發布 (BROADCAST)</button></div></div>`;
+            }
+            else if (stage.type === 'press') {
+                let rulesHtml = stage.rules.map(r => `<li class="mb-1">${r}</li>`).join('');
+                html += `<div class="flex flex-col md:flex-row gap-6"><div class="w-full md:w-1/2 flex items-center justify-center bg-gray-900 rounded border border-gray-700 p-8 shadow-inner"><div class="speech-bubble text-xl">${stage.reporter}</div></div><div class="w-full md:w-1/2 flex flex-col justify-center"><h3 class="text-[var(--cyber-blue)] font-bold mb-4 border-b border-gray-700 pb-2">🎙️ 發言人回應 (限時自由輸入)：</h3><ul class="list-disc pl-5 text-sm text-gray-400 mb-4">${rulesHtml}</ul><textarea id="press-input" class="w-full bg-black text-white p-4 rounded border border-gray-600 h-32 mb-4" placeholder="請輸入您的回應..."></textarea><button onclick="submitPress()" class="btn-cyber py-3 w-full font-bold">發表回應</button></div></div>`;
+            }
+            else if (stage.type === 'triage') {
+                let cardsHtml = stage.options.map((opt, i) => `<div class="triage-card p-5 rounded bg-gray-900 shadow-md" onclick="handleTriage(this, ${opt.correct}, '${opt.reason.replace(/'/g, "\\'")}')"><span class="text-[var(--cyber-alert)] font-bold mr-2 bg-red-900/50 px-2 py-1 rounded">WARN-0${i+1}</span><span class="leading-relaxed">${opt.text}</span></div>`).join('');
+                html += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">${cardsHtml}</div><div id="triage-action" class="mt-8 text-right hidden"><button onclick="nextStage()" class="btn-cyber px-6 py-2 shadow-lg">確認處置，前往下一步 >></button></div>`;
+            }
+            else if (stage.type === 'sequence') {
+                let seqHtml = stage.sequenceData.map(item => `<div class="seq-item triage-card p-4 rounded bg-gray-900 flex items-center shadow-md" data-id="${item.id}" onclick="handleSequence(this, ${item.id}, ${stage.sequenceData.length})"><div class="seq-badge w-8 h-8 rounded border border-gray-600 flex items-center justify-center font-bold mr-4 bg-black">?</div><div class="flex-1">${item.text}</div></div>`).join('');
+                html += `<div class="max-w-3xl mx-auto w-full space-y-4">${seqHtml}<div class="text-center mt-6"><button onclick="resetSequence()" class="btn-cyber px-4 py-2 text-sm border-gray-500 text-gray-400 hover:text-white mr-2">重新排列</button></div></div>`;
+            }
+            else if (stage.type === 'cipher') {
+                html += `<div class="bg-gray-900 p-8 rounded border border-gray-700 shadow-inner max-w-2xl mx-auto w-full"><div class="terminal-box h-auto mb-6">> INTERCEPTED PAYLOAD:<br><span class="text-[var(--cyber-alert)] text-xl font-bold break-all">${stage.cipherText}</span></div><button id="btn-decode" onclick="handleCipher('${stage.plainText}')" class="btn-cyber w-full py-4 text-lg font-bold">啟動 Base64 解譯程序</button><div id="cipher-result" class="hidden mt-6 p-4 border border-[var(--cyber-success)] bg-green-900/20 text-[var(--cyber-success)] font-bold text-xl text-center shadow-[0_0_15px_rgba(0,255,102,0.3)]"></div><div class="text-center"><button id="btn-cipher-next" onclick="nextStage()" class="btn-cyber mt-6 px-8 py-2 hidden">目標已確認，進入下一步 >></button></div></div>`;
+            }
+            else if (stage.type === 'phishing') {
+                let urlHtml = stage.urls.map(u => `<button onclick="handlePhishing(${u.isFake}, '${u.reason ? u.reason.replace(/'/g, "\\'") : ''}')" class="w-full text-left bg-black hover:bg-gray-800 p-4 rounded border border-gray-600 mb-3 mono-font break-all shadow-md transition-colors">${u.url}</button>`).join('');
+                html += `<div class="bg-gray-900 p-6 rounded border border-gray-700 shadow-inner max-w-3xl mx-auto w-full"><p class="text-[var(--cyber-alert)] mb-4 mono-font text-sm">> 攔截可疑網域清單：</p>${urlHtml}</div>`;
+            }
+            else if (stage.type === 'tuning') {
+                html += `<div class="bg-gray-900 p-8 rounded border border-gray-700 shadow-inner max-w-2xl mx-auto w-full text-center"><div id="radio-display" class="font-mono text-5xl tracking-widest text-[var(--cyber-success)] mb-6 text-shadow">88.0 <span class="text-xl">MHz</span></div><input type="range" id="freq-slider" min="88.0" max="108.0" step="0.1" value="88.0" oninput="handleTuning(this.value, ${stage.targetFreq}, '${stage.secretMsg}')"><div class="mt-8 p-4 bg-black border border-gray-800 h-32 flex items-center justify-center overflow-hidden"><span id="noise-text" class="text-gray-500 font-mono text-lg opacity-80 break-all w-full text-left leading-tight">%$#@!*&^...</span></div><button id="btn-intercept" onclick="nextStage()" class="btn-cyber mt-6 px-8 py-3 hidden">成功攔截！進入下一步 >></button></div>`;
+                setTimeout(() => { playWhiteNoise(); startNoiseLoop(stage.targetFreq); }, 100);
+            }
+            else if (stage.type === 'builder') {
+                let selectsHtml = stage.parts.map(p => {
+                    let opts = `<option value="" disabled selected>-- 請選擇 --</option>` + p.options.map(o => `<option value="${o.val}">${o.text}</option>`).join('');
+                    return `<div class="mb-6"><label class="block text-[var(--cyber-blue)] mb-2 font-bold">${p.label}</label><div class="select-wrapper"><select id="${p.id}" class="builder-select bg-gray-900">${opts}</select></div></div>`;
+                }).join('');
+                html += `<div class="bg-gray-900 p-6 rounded border border-gray-700 shadow-inner max-w-3xl mx-auto w-full"><div class="bg-black/50 p-6 border border-gray-800 rounded shadow-md">${selectsHtml}</div><div class="text-center mt-8"><button onclick="submitBuilder('${stage.correctMsg.replace(/'/g, "\\'")}')" class="btn-cyber px-8 py-3 font-bold text-lg">核發聲明 (APPROVE)</button></div></div>`;
+            }
+            else if (stage.type === 'network') {
+                // 絕對座標系統的 SVG，避免 30% 等比例運算失效，並且加上文字標示
+                let edgesHtml = stage.edges.map(e => {
+                    let from = stage.nodes.find(n => n.id === e.f); let to = stage.nodes.find(n => n.id === e.t);
+                    return `<line x1="${from.cx}" y1="${from.cy}" x2="${to.cx}" y2="${to.cy}" class="net-edge" marker-end="url(#arrowhead)" />`;
+                }).join('');
+                let nodesHtml = stage.nodes.map(n => `
+                    <g class="net-group cursor-pointer" onclick="handleNetworkNode(this, ${n.isTarget}, '${n.msg ? n.msg.replace(/'/g, "\\'") : ''}')">
+                        <circle cx="${n.cx}" cy="${n.cy}" r="6" class="net-node" />
+                        <text x="${n.cx}" y="${n.cy + 1.5}" text-anchor="middle" fill="#fff" font-size="4" font-family="monospace" pointer-events="none">${n.id}</text>
+                    </g>`).join('');
+                
+                html += `
+                <div class="bg-gray-900 p-6 rounded border border-gray-700 shadow-inner max-w-3xl mx-auto w-full">
+                    <div class="relative w-full aspect-video bg-black rounded border border-gray-800 shadow-inner overflow-hidden">
+                        <svg viewBox="0 0 100 100" class="w-full h-full absolute inset-0">
+                            <defs>
+                                <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="14" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+                                    <polygon points="0 0, 8 4, 0 8" fill="var(--cyber-blue)" />
+                                </marker>
+                            </defs>
+                            ${edgesHtml}${nodesHtml}
+                        </svg>
+                    </div>
+                    <div id="net-result" class="mt-6 text-center"></div>
+                </div>`;
+            }
+            else if (stage.type === 'hex') {
+                let hexRows = stage.hexLines.map(line => `<div class="hex-row" onclick="handleHexClick(this, ${line.isMalicious || false}, '${line.msg.replace(/'/g, "\\'")}')"><div class="hex-hex font-mono">${line.hex}</div><div class="hex-ascii font-mono">${line.ascii.replace(/</g, "&lt;")}</div></div>`).join('');
+                html += `<div class="bg-gray-900 p-6 rounded border border-gray-700 shadow-inner w-full"><div class="bg-black border border-gray-800 rounded p-4 h-80 overflow-y-auto mb-6 shadow-inner">${hexRows}</div><div id="hex-result" class="hidden"></div></div>`;
+            }
+            else if (stage.type === 'allocation') {
+                let slidersHtml = stage.targets.map((t, i) => `<div class="mb-4"><div class="flex justify-between mb-1"><label class="text-[var(--cyber-blue)] font-bold">${t}</label><span id="val-${i}" class="font-mono text-gray-300">0</span></div><input type="range" class="alloc-slider" min="0" max="${stage.totalPoints}" value="0" oninput="updateAllocation()"></div>`).join('');
+                html += `<div class="bg-gray-900 p-6 rounded border border-gray-700 shadow-inner max-w-2xl mx-auto w-full"><div class="mb-6 p-4 bg-black border border-gray-800 rounded"><p class="text-gray-300 font-bold mb-2">可用單位總數：<span id="alloc-total" class="font-mono text-[var(--cyber-alert)]">0</span> / ${stage.totalPoints}</p></div>${slidersHtml}<div class="text-right mt-6"><button id="btn-verify-alloc" onclick="verifyAllocation('${JSON.stringify(stage.rules)}', '${stage.ruleMsg.replace(/'/g, "\\'")}')" class="btn-cyber px-8 py-3" disabled>確認調度部署 (DEPLOY)</button></div></div>`;
+            }
+            else if (stage.type === 'traceroute') {
+                let nodesHtml = stage.hops.map(h => `<div class="trace-node bg-black hover:bg-gray-800 rounded mb-2 border border-gray-800 font-mono text-sm flex justify-between shadow-sm" onclick="handleTraceClick(this, ${h.isTarget}, '${h.msg.replace(/'/g, "\\'")}')"><span><span class="text-gray-500 mr-2">> hop:</span><span class="text-[var(--cyber-blue)]">${h.ip}</span></span><span>${h.ms} ms</span><span class="text-gray-500">${h.loc}</span></div>`).join('');
+                html += `<div class="bg-gray-900 p-6 rounded border border-gray-700 shadow-inner max-w-3xl mx-auto w-full"><div class="bg-black p-4 rounded border border-gray-800 mb-6 font-mono text-[var(--cyber-success)] shadow-inner" id="trace-term"></div>${nodesHtml}<div id="trace-result" class="mt-6 text-center hidden"></div></div>`;
+            }
+            else if (stage.type === 'ending') {
+                playSuccess();
+                let evalText = state.sri >= 80 ? '<span class="text-[var(--cyber-success)]">S級卓越防禦。社會韌性展露無遺。</span>' : (state.sri >= 50 ? '<span class="text-[var(--cyber-blue)]">A級戰術勝利。信任修復仍需時間。</span>' : '<span class="text-[var(--cyber-alert)]">B級慘勝。社會信任受到重創。</span>');
+                html = `<div class="flex-1 flex flex-col justify-center items-center text-center"><h2 class="text-5xl font-bold text-white mb-2 glitch" data-text="演習結束 END OF EXERCISE">演習結束 END OF EXERCISE</h2><div class="bg-gray-900 border border-[var(--cyber-blue)] p-10 rounded max-w-2xl w-full text-left mt-8 shadow-[0_0_30px_rgba(0,243,255,0.2)]"><div class="text-4xl font-bold text-[var(--cyber-blue)] mb-6 mono-font border-b border-gray-700 pb-4">最終 SRI: ${state.sri}%</div><p class="text-xl leading-relaxed">${evalText}</p></div><button onclick="location.reload()" class="btn-cyber px-8 py-3 mt-10 font-bold text-lg">重啟戰情室 (REBOOT)</button></div>`;
+            }
+
+            elements.container.innerHTML = html;
+
+            // Post-render actions (Typewriter triggers)
+            if (stage.type === 'osint') {
+                typeText(document.getElementById('osint-terminal'), '> 初始化情報網...\n> 準備接受查詢指令...', 20, false);
+            }
+            if (stage.type === 'traceroute') {
+                typeText(document.getElementById('trace-term'), 'traceroute 114.32.x.x\ntracing route to target, max 30 hops...', 20, false);
+            }
+            
+            // Timer Attack Logic
+            if (stage.timeLimit) {
+                let timeLeft = stage.timeLimit * 10; // 100ms intervals
+                const fill = document.getElementById('stage-timer-fill');
+                state.timerInterval = setInterval(() => {
+                    timeLeft--;
+                    fill.style.width = `${(timeLeft / (stage.timeLimit * 10)) * 100}%`;
+                    if (timeLeft <= 0) {
+                        clearInterval(state.timerInterval);
+                        applyPenalty(15, "未在時限內做出決斷，危機已實體化擴散！", nextStage);
+                    }
+                }, 100);
+            }
+        }
+
+        /* ==========================================
+           HANDLERS
+           ========================================== */
+        
+        window.handleTriage = function(el, isCorrect, reason) { 
+            clearInterval(state.timerInterval);
+            document.querySelectorAll('.triage-card').forEach(c => c.style.pointerEvents = 'none'); 
+            el.classList.add('selected'); 
+            if(isCorrect) { 
+                playSuccess();
+                showAlert('檢傷正確', `<span class="text-[var(--cyber-success)]">${reason}</span>`, () => { document.getElementById('triage-action').classList.remove('hidden'); }); 
+            } else { 
+                applyPenalty(10, `錯誤的優先級別判斷。<br>${reason}`, () => { document.getElementById('triage-action').classList.remove('hidden'); }); 
+            } 
+        };
+        
+        window.handleMCQ = function(isCorrect, reason) { 
+            if(isCorrect) { playSuccess(); showAlert('分析正確', `<span class="text-[var(--cyber-success)]">${reason}</span>`, nextStage); } 
+            else { applyPenalty(10, `分析錯誤。<br>${reason}`); } 
+        };
+        
+        window.handleWordClick = function(el, required) { 
+            if(el.classList.contains('revealed-trap') || el.classList.contains('revealed-distractor')) return; 
+            el.classList.toggle('selected'); playType();
+            let count = document.querySelectorAll('.word-node.selected').length; 
+            document.getElementById('trap-counter').innerText = count; 
+            document.getElementById('btn-verify-semantic').disabled = (count !== required); 
+        };
+        
+        window.verifySemantic = async function(required) { 
+            const selected = document.querySelectorAll('.word-node.selected'); 
+            const log = document.getElementById('semantic-log'); 
+            let allCorrect = true; 
+            log.innerHTML = '';
+            
+            for(let el of selected) {
+                el.classList.remove('selected'); 
+                if(el.dataset.type === 'trap') { 
+                    el.classList.add('revealed-trap'); 
+                    playSuccess();
+                    log.innerHTML += `<div class="mb-2 text-[var(--cyber-alert)]">[精準打擊] ${el.dataset.reason}</div>`; 
+                } else { 
+                    el.classList.add('revealed-distractor'); 
+                    playError();
+                    log.innerHTML += `<div class="mb-2 text-[var(--cyber-warning)]">[誤判事實] ${el.dataset.reason}</div>`; 
+                    allCorrect = false; 
+                    if(!state.penaltyActive) { applyPenalty(10, "誤標客觀事實！"); state.penaltyActive = true; } 
+                } 
+                await new Promise(r => setTimeout(r, 400));
+            } 
+            log.innerHTML += `<div class="mt-6 text-center"><button onclick="nextStage()" class="btn-cyber px-6 py-2 text-sm">進入下一階段 >></button></div>`; 
+            log.scrollTop = log.scrollHeight; 
+            document.getElementById('btn-verify-semantic').style.display = 'none'; 
+        };
+        
+        window.handleOsintClick = async function(btn, qId, isTarget, response, required) { 
+            btn.disabled = true; btn.classList.add('opacity-50'); 
+            const term = document.getElementById('osint-terminal'); 
+            
+            let queryNode = document.createElement('div');
+            queryNode.className = "text-gray-400 mt-2";
+            term.appendChild(queryNode);
+            await typeText(queryNode, `> 查詢送出...`, 20, false); 
+            
+            setTimeout(async () => { 
+                let resNode = document.createElement('div');
+                term.appendChild(resNode);
+
+                if(isTarget) { 
+                    playSuccess();
+                    resNode.className = "text-[var(--cyber-success)]";
+                    await typeText(resNode, `> ${response}`, 20, false);
+                    if(!state.osintSet.has(qId)) { 
+                        state.osintSet.add(qId); state.osintFound++; 
+                        document.getElementById('osint-counter').innerText = state.osintFound; 
+                        if(state.osintFound >= required) document.getElementById('btn-next-osint').classList.remove('hidden'); 
+                    }
+                } else { 
+                    playError();
+                    resNode.className = "text-[var(--cyber-warning)]";
+                    await typeText(resNode, `> ${response}`, 20, false);
+                    applyPenalty(5, "查詢無關資料庫。"); 
+                } 
+                term.scrollTop = term.scrollHeight; 
+            }, 400); 
+        };
+        
+        window.updateCbsCount = function(el) { const len = el.value.length; const counter = document.getElementById('char-counter'); counter.innerText = `${len} / 60 字`; counter.classList.toggle('text-[var(--cyber-alert)]', len > 60); };
+        window.submitCBS = function() { 
+            const text = document.getElementById('cbs-input').value; 
+            if(text.trim() === '') return; 
+            const stage = campaign[state.idx]; let errors = []; 
+            if(text.length > 60) errors.push("字數超過60字。"); 
+            if(text.length < 10) errors.push("字數過短。"); 
+            let usedForbidden = stage.forbiddenWords.filter(w => text.includes(w)); 
+            if(usedForbidden.length > 0) errors.push(`【反作用效應】重複謠言字眼：「${usedForbidden.join('、')}」！`); 
+            let hasPositive = stage.requiredWords.some(w => text.includes(w)); 
+            if(!hasPositive) errors.push(`未提供明確事實（需包含：${stage.requiredWords.join(' / ')} 等字眼）。`); 
+            
+            if(errors.length > 0) { applyPenalty(15, errors.join('<br>')); } 
+            else { playSuccess(); showAlert('發布成功', '<span class="text-[var(--cyber-success)]">澄清訊息已發送全國。社會恐慌受控。</span>', nextStage); } 
+        };
+
+        window.submitPress = function() {
+            const text = document.getElementById('press-input').value; 
+            if(text.trim() === '') return; 
+            const stage = campaign[state.idx]; let errors = []; 
+            
+            let usedForbidden = stage.forbiddenWords.filter(w => text.includes(w)); 
+            if(usedForbidden.length > 0) errors.push(`【反作用效應】您在發言中重複了媒體的負面誘導字眼：「${usedForbidden.join('、')}」！這會為謠言背書！`); 
+            let hasPositive = stage.requiredWords.some(w => text.includes(w)); 
+            if(!hasPositive) errors.push(`您的發言缺乏正面安定力量（需提到：${stage.requiredWords.join(' / ')} 等關鍵字）。`); 
+            
+            if(errors.length > 0) { applyPenalty(15, errors.join('<br>')); } 
+            else { playSuccess(); showAlert('發言成功', '<span class="text-[var(--cyber-success)]">非常精準的外交/公關辭令！成功將敵方設定的負面對話框架導向正面事實。</span>', nextStage); } 
+        }
+
+        window.handlePhishing = function(isFake, reason) { if(isFake) { playSuccess(); showAlert('精準攔截', `<span class="text-[var(--cyber-success)]">${reason}</span>`, nextStage); } else { applyPenalty(10, "誤判官方合法網域為釣魚網站，這會阻斷官方資訊流通！"); } };
+        
+        window.handleTuning = function(val, target, msg) { 
+            document.getElementById('radio-display').innerHTML = `${parseFloat(val).toFixed(1)} <span class="text-xl">MHz</span>`; 
+            const noiseEl = document.getElementById('noise-text'); const btn = document.getElementById('btn-intercept'); 
+            if(Math.abs(val - target) < 0.2) { 
+                noiseEl.innerHTML = msg; noiseEl.className = "text-[var(--cyber-alert)] font-bold text-lg w-full text-left leading-tight"; 
+                btn.classList.remove('hidden'); 
+                if(noiseGain) noiseGain.gain.value = 0.005; // lower noise volume
+            } else { 
+                noiseEl.className = "text-gray-500 font-mono text-lg opacity-80 break-all w-full text-left leading-tight"; 
+                btn.classList.add('hidden'); 
+                if(noiseGain) noiseGain.gain.value = 0.05;
+            } 
+        };
+        
+        window.startNoiseLoop = function(target) { 
+            clearInterval(noiseInterval); 
+            noiseInterval = setInterval(() => { 
+                if(campaign[state.idx].type !== 'tuning') { clearInterval(noiseInterval); return; } 
+                const val = document.getElementById('freq-slider').value; 
+                if(Math.abs(val - target) >= 0.2) { 
+                    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"; let noise = ""; 
+                    for(let i=0; i<150; i++) noise += chars.charAt(Math.floor(Math.random() * chars.length)); 
+                    document.getElementById('noise-text').innerText = noise; 
+                } 
+            }, 100); 
+        };
+        
+        window.handleSequence = function(el, id, total) { 
+            if(state.seqArr.includes(id)) return; playType();
+            state.seqArr.push(id); const badge = el.querySelector('.seq-badge'); 
+            badge.innerText = state.seqArr.length; badge.classList.remove('bg-black', 'border-gray-600'); badge.classList.add('bg-[var(--cyber-blue)]', 'text-black', 'border-[var(--cyber-blue)]'); 
+            if(state.seqArr.length === total) { 
+                let isCorrect = state.seqArr.every((val, index) => val === index + 1); 
+                if(isCorrect) { playSuccess(); showAlert('邏輯重構成功', '<span class="text-[var(--cyber-success)]">完美的證偽邏輯！利用時間軸矛盾徹底擊破謠言。</span>', nextStage); } 
+                else { applyPenalty(10, "邏輯鏈錯誤。錯誤的前後果關係無法說服民眾。請重新排列。"); resetSequence(); } 
+            } 
+        };
+        
+        window.resetSequence = function() { state.seqArr = []; document.querySelectorAll('.seq-item').forEach(el => { const badge = el.querySelector('.seq-badge'); badge.innerText = '?'; badge.className = 'seq-badge w-8 h-8 rounded border border-gray-600 flex items-center justify-center font-bold mr-4 bg-black text-white'; }); };
+        
+        window.handleCipher = function(plainText) { 
+            const btn = document.getElementById('btn-decode'); const res = document.getElementById('cipher-result'); const nextBtn = document.getElementById('btn-cipher-next'); 
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 解碼器運行中...'; btn.disabled = true; 
+            setTimeout(() => { playSuccess(); btn.style.display = 'none'; res.innerHTML = plainText; res.classList.remove('hidden'); nextBtn.classList.remove('hidden'); }, 1500); 
+        };
+
+        window.submitBuilder = function(correctMsg) {
+            const selects = document.querySelectorAll('.builder-select');
+            let allFilled = true; let allCorrect = true;
+            selects.forEach(s => { if(s.value === '') allFilled = false; if(s.value === 'wrong') allCorrect = false; });
+            if(!allFilled) { showAlert('警告', '請完成所有模組選擇。'); return; }
+            if(allCorrect) { playSuccess(); showAlert('核發成功', `<span class="text-[var(--cyber-success)]">${correctMsg}</span>`, nextStage); } 
+            else { applyPenalty(15, "您的聲明中包含了不當字眼或錯誤的論述框架，這會導致反作用效應！"); }
+        };
+
+        window.handleNetworkNode = function(el, isTarget, msg) {
+            // 改為選取底下的 circle 或者自己本身
+            let circle = el.querySelector('circle') || el;
+            if(circle.classList.contains('eliminated')) return;
+            
+            if(isTarget) {
+                circle.classList.add('eliminated'); playSuccess();
+                document.getElementById('net-result').innerHTML = `<p class="text-[var(--cyber-success)] font-bold text-lg mb-4">${msg}</p><button onclick="nextStage()" class="btn-cyber px-6 py-2">進入下一步 >></button>`;
+            } else { applyPenalty(10, "誤判！您封鎖了僅負責轉推的邊緣節點，C2 核心帳號依然在運作！"); }
+        };
+
+        window.handleHexClick = function(el, isTarget, msg) {
+            if(isTarget) {
+                playSuccess();
+                el.style.background = 'rgba(0, 255, 102, 0.2)'; el.style.border = '1px solid var(--cyber-success)';
+                document.getElementById('hex-result').innerHTML = `<p class="text-[var(--cyber-success)] font-bold text-lg mb-4">${msg}</p><button onclick="nextStage()" class="btn-cyber px-6 py-2">進入下一步 >></button>`;
+                document.getElementById('hex-result').classList.remove('hidden');
+            } else { applyPenalty(5, `鑑識錯誤。<br>${msg}`); }
+        };
+
+        window.updateAllocation = function() {
+            let total = 0; const sliders = document.querySelectorAll('.alloc-slider');
+            sliders.forEach((s, i) => { const val = parseInt(s.value); total += val; document.getElementById(`val-${i}`).innerText = val; });
+            const totalEl = document.getElementById('alloc-total');
+            totalEl.innerText = total;
+            totalEl.className = total === campaign[state.idx].totalPoints ? 'font-mono text-[var(--cyber-success)] font-bold' : 'font-mono text-[var(--cyber-alert)] font-bold';
+            document.getElementById('btn-verify-alloc').disabled = (total !== campaign[state.idx].totalPoints);
+        };
+
+        window.verifyAllocation = function(rulesStr, successMsg) {
+            const rules = JSON.parse(rulesStr); const vals = Array.from(document.querySelectorAll('.alloc-slider')).map(s => parseInt(s.value));
+            let pass = true; for(let i=0; i<rules.length; i++) { if(vals[i] < rules[i]) pass = false; }
+            if(pass) { playSuccess(); showAlert('調度成功', `<span class="text-[var(--cyber-success)]">${successMsg}</span>`, nextStage); } 
+            else { applyPenalty(15, "資源調度失敗。關鍵單位的人力低於最低防禦閾值，導致防線被突破！"); }
+        };
+
+        window.handleTraceClick = function(el, isTarget, msg) {
+            if(isTarget) {
+                playSuccess();
+                el.style.borderColor = 'var(--cyber-success)'; el.style.background = 'rgba(0, 255, 102, 0.1)';
+                document.getElementById('trace-result').innerHTML = `<p class="text-[var(--cyber-success)] font-bold text-lg mb-4">${msg}</p><button onclick="nextStage()" class="btn-cyber px-6 py-2">進入下一步 >></button>`;
+                document.getElementById('trace-result').classList.remove('hidden');
+            } else { applyPenalty(5, `追蹤錯誤。<br>${msg}`); }
+        };
+
+        // Init
+        window.onload = renderStage;
+
+    </script>
+</body>
+</html>
